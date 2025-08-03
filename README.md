@@ -13,3 +13,6 @@
 ### Move Packages
 - [ ] Escrow
 - [ ] Auction
+
+### Reference
+- [Escrow Package template](https://github.com/MystenLabs/sui/tree/main/examples/trading/contracts/escrow)
