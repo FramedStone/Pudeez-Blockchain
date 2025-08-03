@@ -1,0 +1,8 @@
+[package]
+name = "PudeezEscrow"
+edition = "2024.beta"
+
+[addresses]
+pudeez_escrow = "0x0"
+escrow = "0x0"
+
