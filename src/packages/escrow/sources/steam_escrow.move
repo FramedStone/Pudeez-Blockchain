@@ -26,7 +26,11 @@ public struct SteamEscrow has key, store {
     /// Seller's wallet address (with zkLogin support) 
     seller: address,
     /// Initial item count on seller
-    initial_item_count: u8,
+    initial_seller_item_count: u8,
+    /// Initial item count on buyer
+    initial_buyer_item_count: u8,
+    // Buyer's trade URL
+    trade_url: vector<u8>,
     /// Steam asset being traded
     asset: SteamAsset,
     /// Price in Sui tokens
@@ -61,7 +65,9 @@ public fun create_escrow(
     asset_id: vector<u8>,
     asset_name: vector<u8>,
     asset_amount: u64,
-    initial_item_count: u8,
+    trade_url: vector<u8>,
+    initial_seller_item_count: u8,
+    initial_buyer_item_count: u8,
     price: u64,
     ctx: &mut TxContext
 ): SteamEscrow {
@@ -79,7 +85,9 @@ public fun create_escrow(
         buyer,
         seller,
         asset,
-        initial_item_count,
+        initial_seller_item_count,
+        initial_buyer_item_count,
+        trade_url,
         price,
         payment_deposited: false,
         is_transfered: false,
