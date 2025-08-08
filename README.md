@@ -1,14 +1,17 @@
 # Pudeez-Blockchain
 
 ### Overview
+- Blockchain network --> Sui layer 1 
+- Wallet --> Slush 
 
 ### TODO list
-- [ ] spinning local network
-- [ ] prototype move packages and test on Remix IDE with Sui Plugin
-- [ ] create move packages 
+- [x] spinning local network
+- [x] create move packages 
+- [x] create unit tests
 - [ ] publish move packages
 - [ ] deploy move packages on Sui devnet/testnet
-- [ ] connect network from backend
+- [ ] test packages using local Sui network
+- [ ] test packages from backend
 
 ### Move Packages
 - [ ] Escrow
