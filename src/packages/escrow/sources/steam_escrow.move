@@ -25,16 +25,18 @@ public struct SteamEscrow has key, store {
     buyer: address,
     /// Seller's wallet address (with zkLogin support) 
     seller: address,
+    /// Initial item count on seller
+    initial_seller_item_count: u8,
+    /// Initial item count on buyer
+    initial_buyer_item_count: u8,
+    // Buyer's trade URL
+    trade_url: vector<u8>,
     /// Steam asset being traded
     asset: SteamAsset,
     /// Price in Sui tokens
     price: u64,
     /// Payment deposited flag
     payment_deposited: bool,
-    /// Buyer's trade URL
-    buyer_trade_url: Option<vector<u8>>,
-    /// Seller's trade URL
-    seller_trade_url: Option<vector<u8>>,
     /// Transfer status - true if asset transferred to buyer, false otherwise
     is_transfered: bool,
     /// Escrow state tracking
@@ -45,16 +47,12 @@ public struct SteamEscrow has key, store {
 const EInvalidCaller: u64 = 0;
 const EInvalidState: u64 = 1;
 const EInsufficientPayment: u64 = 2;
-const EAlreadySubmittedURL: u64 = 3;
 const ETransferNotCompleted: u64 = 4;
 const ETransferAlreadyCompleted: u64 = 5;
-const ESellerMustSubmitURL: u64 = 6;
 
 // === State constants ===
 const STATE_INITIALIZED: u8 = 0;
 const STATE_DEPOSITED: u8 = 1;
-const STATE_BUYER_URL_SUBMITTED: u8 = 2;
-const STATE_SELLER_URL_SUBMITTED: u8 = 3;
 const STATE_COMPLETED: u8 = 4;
 
 // === Public Functions ===
@@ -67,6 +65,9 @@ public fun create_escrow(
     asset_id: vector<u8>,
     asset_name: vector<u8>,
     asset_amount: u64,
+    trade_url: vector<u8>,
+    initial_seller_item_count: u8,
+    initial_buyer_item_count: u8,
     price: u64,
     ctx: &mut TxContext
 ): SteamEscrow {
@@ -84,10 +85,11 @@ public fun create_escrow(
         buyer,
         seller,
         asset,
+        initial_seller_item_count,
+        initial_buyer_item_count,
+        trade_url,
         price,
         payment_deposited: false,
-        buyer_trade_url: option::none(),
-        seller_trade_url: option::none(),
         is_transfered: false,
         state: STATE_INITIALIZED,
     };
@@ -119,7 +121,7 @@ public fun deposit(
     // Verify payment amount matches price
     assert!(coin::value(&payment) >= escrow.price, EInsufficientPayment);
 
-    // Lock the payment
+    // Lock the paymentThe swap function checks that senders and recipients match and that each party wants the object that the other party is offering, by comparing their respective key IDs. If the custodian tried to match together two unrelated escrow requests to swap
     let (locked_payment, key) = lock::lock(payment, ctx);
     
     escrow.payment_deposited = true;
@@ -134,53 +136,6 @@ public fun deposit(
     (locked_payment, key)
 }
 
-/// Buyer uploads their trade URL
-public fun upload_trade_url_buyer(
-    escrow: &mut SteamEscrow,
-    trade_url: vector<u8>,
-    ctx: &TxContext
-) {
-    // Verify caller is the buyer
-    assert!(ctx.sender() == escrow.buyer, EInvalidCaller);
-    
-    // Verify URL hasn't been submitted yet
-    assert!(option::is_none(&escrow.buyer_trade_url), EAlreadySubmittedURL);
-    
-    // Verify payment has been deposited
-    assert!(escrow.state == STATE_DEPOSITED, EInvalidState);
-
-    escrow.buyer_trade_url = option::some(trade_url);
-    escrow.state = STATE_BUYER_URL_SUBMITTED;
-
-    event::emit(BuyerTradeURLSubmitted {
-        escrow_id: object::id(escrow),
-        buyer: escrow.buyer,
-    });
-}
-
-/// Seller uploads their trade URL after sending asset
-public fun upload_trade_url_seller(
-    escrow: &mut SteamEscrow,
-    trade_url: vector<u8>,
-    ctx: &TxContext
-) {
-    // Verify caller is the seller
-    assert!(ctx.sender() == escrow.seller, EInvalidCaller);
-    
-    // Verify buyer has submitted their URL
-    assert!(escrow.state == STATE_BUYER_URL_SUBMITTED, EInvalidState);
-    
-    // Verify seller URL hasn't been submitted yet
-    assert!(option::is_none(&escrow.seller_trade_url), EAlreadySubmittedURL);
-
-    escrow.seller_trade_url = option::some(trade_url);
-    escrow.state = STATE_SELLER_URL_SUBMITTED;
-
-    event::emit(SellerTradeURLSubmitted {
-        escrow_id: object::id(escrow),
-        seller: escrow.seller,
-    });
-}
 
 /// Seller claims the payment after successful transfer
 public fun claim(
@@ -192,9 +147,6 @@ public fun claim(
 ): Coin<SUI> {
     // Verify caller is the seller
     assert!(ctx.sender() == escrow.seller, EInvalidCaller);
-    
-    // Verify seller has submitted their trade URL
-    assert!(escrow.state == STATE_SELLER_URL_SUBMITTED, ESellerMustSubmitURL);
     
     // Update transfer status (this will be handled by backend)
     escrow.is_transfered = is_transfered;
@@ -254,16 +206,6 @@ public fun get_escrow_info(escrow: &SteamEscrow): (address, address, SteamAsset,
     (escrow.buyer, escrow.seller, escrow.asset, escrow.price, escrow.state, escrow.is_transfered)
 }
 
-/// Check if buyer trade URL is submitted
-public fun has_buyer_trade_url(escrow: &SteamEscrow): bool {
-    option::is_some(&escrow.buyer_trade_url)
-}
-
-/// Check if seller trade URL is submitted  
-public fun has_seller_trade_url(escrow: &SteamEscrow): bool {
-    option::is_some(&escrow.seller_trade_url)
-}
-
 /// Get current state
 public fun get_state(escrow: &SteamEscrow): u8 {
     escrow.state
@@ -284,17 +226,6 @@ public struct PaymentDeposited has copy, drop {
     buyer: address,
     amount: u64,
 }
-
-public struct BuyerTradeURLSubmitted has copy, drop {
-    escrow_id: ID,
-    buyer: address,
-}
-
-public struct SellerTradeURLSubmitted has copy, drop {
-    escrow_id: ID,
-    seller: address,
-}
-
 public struct PaymentClaimed has copy, drop {
     escrow_id: ID,
     seller: address,
@@ -317,8 +248,6 @@ public fun destroy_escrow_for_testing(escrow: SteamEscrow, _ctx: &mut TxContext)
         asset: _, 
         price: _, 
         payment_deposited: _, 
-        buyer_trade_url: _, 
-        seller_trade_url: _, 
         is_transfered: _, 
         state: _ 
     } = escrow;
