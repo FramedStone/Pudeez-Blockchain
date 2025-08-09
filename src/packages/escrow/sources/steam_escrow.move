@@ -16,6 +16,8 @@ public struct SteamAsset has store, copy, drop {
     asset_id: vector<u8>,
     asset_name: vector<u8>, 
     asset_amount: u64,
+    app_id: vector<u8>,
+    icon_url: vector<u8>,
 }
 
 /// Steam Escrow object for game asset trading
@@ -65,6 +67,8 @@ public fun create_escrow(
     asset_id: vector<u8>,
     asset_name: vector<u8>,
     asset_amount: u64,
+    app_id: vector<u8>,
+    icon_url: vector<u8>,
     trade_url: vector<u8>,
     initial_seller_item_count: u8,
     initial_buyer_item_count: u8,
@@ -78,6 +82,8 @@ public fun create_escrow(
         asset_id,
         asset_name,
         asset_amount,
+        app_id,
+        icon_url,
     };
 
     let escrow = SteamEscrow {
@@ -99,6 +105,10 @@ public fun create_escrow(
         buyer,
         seller,
         asset_id,
+        asset_name,
+        app_id,
+        icon_url,
+        trade_url,
         price,
     });
 
@@ -218,6 +228,10 @@ public struct EscrowInitialized has copy, drop {
     buyer: address,
     seller: address,
     asset_id: vector<u8>,
+    asset_name: vector<u8>,
+    app_id: vector<u8>,
+    icon_url: vector<u8>,
+    trade_url: vector<u8>,
     price: u64,
 }
 
