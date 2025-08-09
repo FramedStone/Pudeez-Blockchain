@@ -5,17 +5,20 @@
 - Wallet --> Slush 
 
 ### TODO list
-- [x] spinning local network
-- [x] create move packages 
-- [x] create unit tests
-- [ ] publish move packages
-- [ ] deploy move packages on Sui devnet/testnet
-- [ ] test packages using local Sui network
-- [ ] test packages from backend
+- [x] Create Lock module
+- [X] Normal escrow flow
+- [X] Escrow flow on buyer cancellation
+- [X] Test packages using local Sui network
+- [X] Deploy packages on Sui devnet/testnet
+- [X] Test packages from backend
+- [ ] Full flow test
+- [ ] Max waiting time before auto-cancellation
 
 ### Move Packages
-- [ ] Escrow
+- [X] Escrow
 - [ ] Auction
 
 ### Reference
 - [Escrow Package template](https://github.com/MystenLabs/sui/tree/main/examples/trading/contracts/escrow)
+- [Sui Getting Started Guide](https://docs.sui.io/guides/developer/getting-started)
+- [Move Reference](https://move-book.com/reference/)
